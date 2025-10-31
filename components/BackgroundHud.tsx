@@ -10,6 +10,8 @@ import { motion } from 'motion/react';
  * - pointer-events-none so it never blocks UI interaction
  */
 export default function BackgroundHud() {
+  // lightweight mobile detection (used to reduce visual detail)
+  const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(pointer:coarse)').matches || window.innerWidth <= 640);
   // low-power detection: automatically reduce detail when on slow devices or Save-Data
   const [lowPower, setLowPower] = useState(false);
   // intentionally exclude `aLevel` from deps: canvas loop reads `aLevelRef.current` directly
@@ -37,7 +39,8 @@ export default function BackgroundHud() {
 
   // memoized particles so they aren't recreated on every render; count depends on lowPower
   const particles = useMemo(() => {
-    const count = lowPower ? 6 : 12;
+    // lower particle counts on mobile in addition to lowPower mode
+    const count = isMobile ? (lowPower ? 4 : 6) : lowPower ? 6 : 12;
     return new Array(count).fill(0).map((_, i) => ({
       id: i,
       left: `${10 + ((i * 7) % 80)}%`,
@@ -45,7 +48,7 @@ export default function BackgroundHud() {
       delay: (i % 5) * 0.6,
       size: 2 + (i % 4) * 2,
     }));
-  }, [lowPower]);
+  }, [lowPower, isMobile]);
 
   // extra decorative particle set (larger, slower) memoized
   // (removed unused bigParticles to satisfy lint)
@@ -84,11 +87,13 @@ export default function BackgroundHud() {
 
     let width = canvas.clientWidth;
     let height = canvas.clientHeight;
-    const dpr = window.devicePixelRatio || 1;
-    devicePixelRatioRef.current = dpr;
-    canvas.width = Math.max(1, Math.floor(width * dpr));
-    canvas.height = Math.max(1, Math.floor(height * dpr));
-    ctx.scale(dpr, dpr);
+  const dpr = window.devicePixelRatio || 1;
+  // cap devicePixelRatio on mobile to avoid huge canvas bitmaps
+  const cappedDpr = Math.min(dpr, isMobile ? 1.25 : 2);
+  devicePixelRatioRef.current = cappedDpr;
+  canvas.width = Math.max(1, Math.floor(width * cappedDpr));
+  canvas.height = Math.max(1, Math.floor(height * cappedDpr));
+  ctx.setTransform(cappedDpr, 0, 0, cappedDpr, 0, 0);
 
     // create internal particle objects from the memoized arrays
     const partObjs = particles.map((p) => ({
@@ -102,27 +107,35 @@ export default function BackgroundHud() {
       oy: parseFloat(p.top) / 100,
     }));
 
-    const orbitCount = lowPower ? 4 : 6;
+    const orbitCount = isMobile ? (lowPower ? 3 : 4) : lowPower ? 4 : 6;
 
     let rafId: number | null = null;
     let last = performance.now();
+    const targetFps = isMobile ? 15 : 30;
+    const minFrameInterval = 1000 / targetFps;
 
     const draw = (now: number) => {
+      // pause heavy work when the tab is hidden to save battery
       if (typeof document !== 'undefined' && document.hidden) {
         rafId = requestAnimationFrame(draw);
         return;
       }
-  // dt intentionally unused here; canvas animation is driven by timestamps and aLevelRef
-  last = now;
+      // throttle to target FPS
+      const dt = now - last;
+      if (dt < minFrameInterval) {
+        rafId = requestAnimationFrame(draw);
+        return;
+      }
+      last = now;
 
       // clear
       ctx.clearRect(0, 0, width, height);
       const cx = width / 2;
       const cy = height / 2;
-      const baseR = Math.min(width, height) * 0.12;
+  const baseR = Math.min(width, height) * (isMobile ? 0.08 : 0.12);
 
       // read current activity level from ref
-      const localALevel = aLevelRef.current;
+  const localALevel = aLevelRef.current;
       // update and draw floating particles
       for (let i = 0; i < partObjs.length; i++) {
         const p = partObjs[i];
@@ -140,7 +153,7 @@ export default function BackgroundHud() {
       ctx.strokeStyle = `rgba(96,165,250,${0.06 + aLevel * 0.18})`;
       for (let i = 0; i < orbitCount; i++) {
         const angle = (i / orbitCount) * Math.PI * 2 + now / 2000;
-        const r = Math.min(width, height) * (lowPower ? 0.25 : 0.34);
+        const r = Math.min(width, height) * (isMobile ? 0.22 : lowPower ? 0.25 : 0.34);
         const lx = cx + Math.cos(angle) * r;
         const ly = cy + Math.sin(angle) * r;
         ctx.beginPath();
@@ -159,7 +172,7 @@ export default function BackgroundHud() {
       }
 
       // draw center burst (simple radial dots)
-      const burstCount = lowPower ? 6 : 10;
+  const burstCount = isMobile ? (lowPower ? 4 : 6) : lowPower ? 6 : 10;
       for (let i = 0; i < burstCount; i++) {
         const a = (i / burstCount) * Math.PI * 2 + now / 600;
         const rr = baseR * (0.2 + 0.6 * Math.abs(Math.sin(now / 400 + i)));

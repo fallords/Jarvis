@@ -29,8 +29,8 @@ export async function POST(req: Request) {
       throw new Error('LIVEKIT_API_SECRET is not defined');
     }
 
-    // Parse agent configuration from request body
-    const body = await req.json();
+    // Parse agent configuration from request body (defensively handle empty/non-JSON bodies)
+    const body = await req.json().catch(() => ({}));
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
 
     // Generate participant token
