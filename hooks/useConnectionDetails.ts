@@ -48,7 +48,7 @@ export default function useConnectionDetails(appConfig: AppConfig) {
 
     setConnectionDetails(data);
     return data;
-  }, []);
+  }, [appConfig.agentName, appConfig.sandboxId]);
 
   useEffect(() => {
     fetchConnectionDetails();

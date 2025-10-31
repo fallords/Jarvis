@@ -1,8 +1,8 @@
 import * as React from 'react';
 import type { MessageFormatter, ReceivedChatMessage } from '@livekit/components-react';
+import ClientTime from '@/components/ClientTime';
 import { cn } from '@/lib/utils';
 import { useChatMessage } from './hooks/utils';
-import ClientTime from '@/components/ClientTime';
 
 export interface ChatEntryProps extends React.HTMLAttributes<HTMLLIElement> {
   /** The chat massage object to display. */
@@ -23,7 +23,7 @@ export const ChatEntry = ({
   className,
   ...props
 }: ChatEntryProps) => {
-  const { message, hasBeenEdited, time, locale, name } = useChatMessage(entry, messageFormatter);
+  const { message, hasBeenEdited, time, name } = useChatMessage(entry, messageFormatter);
 
   const isUser = entry.from?.isLocal ?? false;
   const messageOrigin = isUser ? 'remote' : 'local';

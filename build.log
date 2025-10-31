@@ -1,0 +1,44 @@
+﻿
+> agent-starter-react@0.1.0 build D:\VSCODE\agent-starter-react-main
+> next build
+
+   Γû▓ Next.js 15.5.2
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 28.6s
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/9) ...
+   Generating static pages (2/9) 
+   Generating static pages (4/9) 
+   Generating static pages (6/9) 
+ Γ£ô Generating static pages (9/9)
+node.exe :  ΓÜá metadataBase property in metadata export is not set for resolving social open graph or twitter images, using 
+"http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+At C:\Users\REPUBLIC OF GAMERS\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( ΓÜá metadataBa...ta#metadatabase:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+Γöî ╞Æ /                                    52.3 kB         331 kB
+Γö£ ╞Æ /_not-found                            994 B         103 kB
+Γö£ ╞Æ /api/connection-details                134 B         102 kB
+Γö£ ╞Æ /components                            134 B         102 kB
+Γö£ ╞Æ /components/base                     2.31 kB         139 kB
+Γö£ ╞Æ /components/livekit                    182 B         267 kB
+Γöö ╞Æ /opengraph-image-xg4ifa                134 B         102 kB
++ First Load JS shared by all             102 kB
+  Γö£ chunks/2c913ea3-f77b522ca87815ac.js  54.2 kB
+  Γö£ chunks/341-2d546ef92ef35bc1.js       45.3 kB
+  Γöö other shared chunks (total)             2 kB
+
+
+╞Æ  (Dynamic)  server-rendered on demand
+

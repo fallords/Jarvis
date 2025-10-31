@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useMemo } from 'react';
 
@@ -11,10 +11,13 @@ interface ClientTimeProps {
 export default function ClientTime({ timestamp, timeStyle = 'short', className }: ClientTimeProps) {
   const formatted = useMemo(() => {
     try {
-      const d = typeof timestamp === 'string' || typeof timestamp === 'number' ? new Date(timestamp) : timestamp;
+      const d =
+        typeof timestamp === 'string' || typeof timestamp === 'number'
+          ? new Date(timestamp)
+          : timestamp;
       const locale = typeof navigator !== 'undefined' ? navigator.language : 'en-US';
       return d.toLocaleTimeString(locale, { timeStyle });
-    } catch (e) {
+    } catch {
       return '';
     }
   }, [timestamp, timeStyle]);

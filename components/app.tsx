@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Room, RoomEvent } from 'livekit-client';
 import { motion } from 'motion/react';
 import { RoomAudioRenderer, RoomContext, StartAudio } from '@livekit/components-react';
+import BackgroundHud from '@/components/BackgroundHud';
 import { toastAlert } from '@/components/alert-toast';
 import { SessionView } from '@/components/session-view';
 import { Toaster } from '@/components/ui/sonner';
 import { Welcome } from '@/components/welcome';
-import BackgroundHud from '@/components/BackgroundHud';
 import useConnectionDetails from '@/hooks/useConnectionDetails';
 import type { AppConfig } from '@/lib/types';
 
@@ -74,7 +74,12 @@ export function App({ appConfig }: AppProps) {
       aborted = true;
       room.disconnect();
     };
-  }, [room, sessionStarted, appConfig.isPreConnectBufferEnabled]);
+  }, [
+    room,
+    sessionStarted,
+    appConfig.isPreConnectBufferEnabled,
+    existingOrRefreshConnectionDetails,
+  ]);
 
   const { startButtonText } = appConfig;
 
