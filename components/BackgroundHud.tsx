@@ -11,7 +11,9 @@ import { motion } from 'motion/react';
  */
 export default function BackgroundHud() {
   // lightweight mobile detection (used to reduce visual detail)
-  const isMobile = typeof window !== 'undefined' && (window.matchMedia?.('(pointer:coarse)').matches || window.innerWidth <= 640);
+  const isMobile =
+    typeof window !== 'undefined' &&
+    (window.matchMedia?.('(pointer:coarse)').matches || window.innerWidth <= 640);
   // low-power detection: automatically reduce detail when on slow devices or Save-Data
   const [lowPower, setLowPower] = useState(false);
   // intentionally exclude `aLevel` from deps: canvas loop reads `aLevelRef.current` directly
@@ -87,13 +89,13 @@ export default function BackgroundHud() {
 
     let width = canvas.clientWidth;
     let height = canvas.clientHeight;
-  const dpr = window.devicePixelRatio || 1;
-  // cap devicePixelRatio on mobile to avoid huge canvas bitmaps
-  const cappedDpr = Math.min(dpr, isMobile ? 1.25 : 2);
-  devicePixelRatioRef.current = cappedDpr;
-  canvas.width = Math.max(1, Math.floor(width * cappedDpr));
-  canvas.height = Math.max(1, Math.floor(height * cappedDpr));
-  ctx.setTransform(cappedDpr, 0, 0, cappedDpr, 0, 0);
+    const dpr = window.devicePixelRatio || 1;
+    // cap devicePixelRatio on mobile to avoid huge canvas bitmaps
+    const cappedDpr = Math.min(dpr, isMobile ? 1.25 : 2);
+    devicePixelRatioRef.current = cappedDpr;
+    canvas.width = Math.max(1, Math.floor(width * cappedDpr));
+    canvas.height = Math.max(1, Math.floor(height * cappedDpr));
+    ctx.setTransform(cappedDpr, 0, 0, cappedDpr, 0, 0);
 
     // create internal particle objects from the memoized arrays
     const partObjs = particles.map((p) => ({
@@ -132,10 +134,10 @@ export default function BackgroundHud() {
       ctx.clearRect(0, 0, width, height);
       const cx = width / 2;
       const cy = height / 2;
-  const baseR = Math.min(width, height) * (isMobile ? 0.08 : 0.12);
+      const baseR = Math.min(width, height) * (isMobile ? 0.08 : 0.12);
 
       // read current activity level from ref
-  const localALevel = aLevelRef.current;
+      const localALevel = aLevelRef.current;
       // update and draw floating particles
       for (let i = 0; i < partObjs.length; i++) {
         const p = partObjs[i];
@@ -172,7 +174,7 @@ export default function BackgroundHud() {
       }
 
       // draw center burst (simple radial dots)
-  const burstCount = isMobile ? (lowPower ? 4 : 6) : lowPower ? 6 : 10;
+      const burstCount = isMobile ? (lowPower ? 4 : 6) : lowPower ? 6 : 10;
       for (let i = 0; i < burstCount; i++) {
         const a = (i / burstCount) * Math.PI * 2 + now / 600;
         const rr = baseR * (0.2 + 0.6 * Math.abs(Math.sin(now / 400 + i)));
@@ -308,6 +310,57 @@ export default function BackgroundHud() {
     }, 700);
     return () => clearInterval(iv);
   }, []);
+
+  // HUD enabled flag (persisted in localStorage). Users can toggle to disable the HUD.
+  const [hudEnabled, setHudEnabled] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem('hud-enabled');
+      return v === null ? true : v === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    const onToggle = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail === 'boolean') setHudEnabled(detail);
+    };
+    window.addEventListener('hud-toggle', onToggle as EventListener);
+    return () => window.removeEventListener('hud-toggle', onToggle as EventListener);
+  }, []);
+
+  // If HUD disabled by user or we're on a mobile/low-power device, render a very lightweight static background
+  // instead of the full animated HUD. This avoids heavy SVG/motion/canvas work on phones.
+  if (!hudEnabled || isMobile || lowPower) {
+      // ultra-light mobile background: plain dark gradient, no blur, no box-shadows
+      return (
+        <div className="pointer-events-none fixed inset-0 z-0">
+          <div
+            className="absolute inset-0"
+            style={{
+              // simpler gradient and no backdropFilter because blur is expensive on mobile
+              background: 'linear-gradient(180deg, rgba(6,12,20,1) 0%, rgba(3,6,10,1) 100%)',
+            }}
+          />
+          {/* tiny static center accent for polish */}
+          <div
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 80,
+              height: 80,
+              borderRadius: 9999,
+              background:
+                'radial-gradient(circle, rgba(125,211,252,0.14), rgba(56,189,248,0.02) 50%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
+        </div>
+      );
+    }
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0">

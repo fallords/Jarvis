@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { MonitorIcon, MoonIcon, SunIcon } from '@phosphor-icons/react';
 import type { ThemeMode } from '@/lib/types';
 import { THEME_MEDIA_QUERY, THEME_STORAGE_KEY, cn } from '@/lib/utils';
+import { HUD_STORAGE_KEY } from '@/lib/utils';
 
 const THEME_SCRIPT = `
   const doc = document.documentElement;
@@ -50,6 +51,23 @@ export function ApplyThemeScript() {
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const [theme, setTheme] = useState<ThemeMode | undefined>(undefined);
+  const [hudEnabled, setHudEnabled] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem(HUD_STORAGE_KEY);
+      return v === null ? true : v === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    const onToggle = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail === 'boolean') setHudEnabled(detail);
+    };
+    window.addEventListener('hud-toggle', onToggle as EventListener);
+    return () => window.removeEventListener('hud-toggle', onToggle as EventListener);
+  }, []);
 
   useEffect(() => {
     const storedTheme = (localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode) ?? 'system';
@@ -62,6 +80,18 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     setTheme(theme);
   }
 
+  function toggleHud() {
+    const next = !hudEnabled;
+    try {
+      localStorage.setItem(HUD_STORAGE_KEY, String(next));
+    } catch {}
+    setHudEnabled(next);
+    // notify listeners (BackgroundHud)
+    try {
+      window.dispatchEvent(new CustomEvent('hud-toggle', { detail: next }));
+    } catch {}
+  }
+
   return (
     <div
       className={cn(
@@ -69,6 +99,15 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         className
       )}
     >
+      <button
+        type="button"
+        onClick={toggleHud}
+        className={cn('cursor-pointer px-2 py-1', !hudEnabled && 'opacity-40')}
+        title={hudEnabled ? 'Disable HUD' : 'Enable HUD'}
+      >
+        <span className="sr-only">Toggle background HUD</span>
+        HUD
+      </button>
       <span className="sr-only">Color scheme toggle</span>
       <button
         type="button"

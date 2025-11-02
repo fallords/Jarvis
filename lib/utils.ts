@@ -11,6 +11,7 @@ export const SANDBOX_ID = process.env.SANDBOX_ID;
 
 export const THEME_STORAGE_KEY = 'theme-mode';
 export const THEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
+export const HUD_STORAGE_KEY = 'hud-enabled';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
