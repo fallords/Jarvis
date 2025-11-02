@@ -16,6 +16,16 @@ export default function BackgroundHud() {
     (window.matchMedia?.('(pointer:coarse)').matches || window.innerWidth <= 640);
   // low-power detection: automatically reduce detail when on slow devices or Save-Data
   const [lowPower, setLowPower] = useState(false);
+  // HUD enabled flag (persisted in localStorage). Users can toggle to disable the HUD.
+  // Move this up so we can make early decisions about whether to run animations at all.
+  const [hudEnabled, setHudEnabled] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem('hud-enabled');
+      return v === null ? true : v === 'true';
+    } catch {
+      return true;
+    }
+  });
   // intentionally exclude `aLevel` from deps: canvas loop reads `aLevelRef.current` directly
 
   useEffect(() => {
@@ -33,6 +43,7 @@ export default function BackgroundHud() {
       const save = !!conn.saveData;
       const eff = conn.effectiveType || '';
       const mem = nav.deviceMemory || 4;
+      const hw = (navigator as any).hardwareConcurrency || 4;
       if (save || eff.includes('2g') || mem <= 2) setLowPower(true);
     } catch {
       // ignore
@@ -312,15 +323,6 @@ export default function BackgroundHud() {
   }, []);
 
   // HUD enabled flag (persisted in localStorage). Users can toggle to disable the HUD.
-  const [hudEnabled, setHudEnabled] = useState<boolean>(() => {
-    try {
-      const v = localStorage.getItem('hud-enabled');
-      return v === null ? true : v === 'true';
-    } catch {
-      return true;
-    }
-  });
-
   useEffect(() => {
     const onToggle = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -330,37 +332,52 @@ export default function BackgroundHud() {
     return () => window.removeEventListener('hud-toggle', onToggle as EventListener);
   }, []);
 
+  // Respect user/system preferences for reduced motion
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // quick hardware heuristics: if device is low on CPU or memory, treat as low power
+  let hwConcurrency = 4;
+  try {
+    hwConcurrency = (navigator as any).hardwareConcurrency || hwConcurrency;
+  } catch {}
+
+  const animationsAllowed =
+    hudEnabled && !isMobile && !lowPower && !prefersReducedMotion && hwConcurrency > 1;
+
   // If HUD disabled by user or we're on a mobile/low-power device, render a very lightweight static background
   // instead of the full animated HUD. This avoids heavy SVG/motion/canvas work on phones.
   if (!hudEnabled || isMobile || lowPower) {
-      // ultra-light mobile background: plain dark gradient, no blur, no box-shadows
-      return (
-        <div className="pointer-events-none fixed inset-0 z-0">
-          <div
-            className="absolute inset-0"
-            style={{
-              // simpler gradient and no backdropFilter because blur is expensive on mobile
-              background: 'linear-gradient(180deg, rgba(6,12,20,1) 0%, rgba(3,6,10,1) 100%)',
-            }}
-          />
-          {/* tiny static center accent for polish */}
-          <div
-            style={{
-              position: 'absolute',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 80,
-              height: 80,
-              borderRadius: 9999,
-              background:
-                'radial-gradient(circle, rgba(125,211,252,0.14), rgba(56,189,248,0.02) 50%, transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
-        </div>
-      );
-    }
+    // ultra-light mobile background: plain dark gradient, no blur, no box-shadows
+    return (
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div
+          className="absolute inset-0"
+          style={{
+            // simpler gradient and no backdropFilter because blur is expensive on mobile
+            background: 'linear-gradient(180deg, rgba(6,12,20,1) 0%, rgba(3,6,10,1) 100%)',
+          }}
+        />
+        {/* tiny static center accent for polish */}
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 80,
+            height: 80,
+            borderRadius: 9999,
+            background:
+              'radial-gradient(circle, rgba(125,211,252,0.14), rgba(56,189,248,0.02) 50%, transparent 70%)',
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0">
